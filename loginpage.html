@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEU Bus Management System - Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-container { 
+            background: white; 
+            border-radius: 20px; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); 
+            max-width: 450px; 
+            width: 100%;
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { font-size: 16px; opacity: 0.9; }
+        .logo { font-size: 64px; margin-bottom: 15px; }
+        .content { padding: 40px 30px; }
+        .role-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .role-btn {
+            padding: 20px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .role-btn:hover {
+            border-color: #667eea;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        .role-btn.active {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        .role-icon { font-size: 36px; margin-bottom: 8px; }
+        .role-name { font-size: 14px; font-weight: 600; color: #333; }
+        .form-group { margin-bottom: 25px; }
+        label { 
+            display: block; 
+            color: #333; 
+            font-weight: 600; 
+            margin-bottom: 10px; 
+            font-size: 15px; 
+        }
+        input[type="text"], input[type="password"] { 
+            width: 100%; 
+            padding: 14px 16px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 10px; 
+            font-size: 15px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="password"]:focus { 
+            outline: none; 
+            border-color: #667eea; 
+        }
+        .btn-login { 
+            width: 100%; 
+            padding: 16px; 
+            border: none; 
+            border-radius: 10px; 
+            font-size: 18px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.3s;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-login:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-login:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-message {
+            background: #fee;
+            border-left: 4px solid #f44;
+            padding: 12px;
+            border-radius: 8px;
+            color: #c33;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .error-message.show { display: block; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            font-size: 13px;
+            border-top: 1px solid #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="header">
+            <div class="logo">🚌</div>
+            <h1>GEU Bus Management</h1>
+            <p>Graphic Era University</p>
+        </div>
+        
+        <div class="content">
+            <div class="role-selector">
+                <div class="role-btn" onclick="selectRole('student')">
+                    <div class="role-icon">🎓</div>
+                    <div class="role-name">Student</div>
+                </div>
+                <div class="role-btn" onclick="selectRole('driver')">
+                    <div class="role-icon">👨‍✈️</div>
+                    <div class="role-name">Driver</div>
+                </div>
+                <div class="role-btn" onclick="selectRole('admin')">
+                    <div class="role-icon">👔</div>
+                    <div class="role-name">Admin</div>
+                </div>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username" id="usernameLabel">Select a role to continue</label>
+                    <input type="text" id="username" placeholder="Enter your ID" disabled>
+                </div>
+                
+                <div class="form-group" id="passwordGroup" style="display: none;">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your password">
+                </div>
+                
+                <button type="submit" class="btn-login" id="loginBtn" disabled>Login</button>
+            </form>
+        </div>
+
+        <div class="footer">
+            © 2025 Graphic Era University. All rights reserved.
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let selectedRole = null;
+
+        function selectRole(role) {
+            selectedRole = role;
+            
+            // Update UI
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // Update form
+            const usernameInput = document.getElementById('username');
+            const usernameLabel = document.getElementById('usernameLabel');
+            const passwordGroup = document.getElementById('passwordGroup');
+            const loginBtn = document.getElementById('loginBtn');
+            
+            usernameInput.disabled = false;
+            loginBtn.disabled = false;
+            
+            if (role === 'student') {
+                usernameLabel.textContent = 'Student ID';
+                usernameInput.placeholder = 'Enter your Student ID';
+                passwordGroup.style.display = 'block';
+            } else if (role === 'driver') {
+                usernameLabel.textContent = 'Driver Contact Number';
+                usernameInput.placeholder = 'Enter your contact number';
+                passwordGroup.style.display = 'block';
+            } else if (role === 'admin') {
+                usernameLabel.textContent = 'Admin Username';
+                usernameInput.placeholder = 'Enter admin username';
+                passwordGroup.style.display = 'block';
+            }
+            
+            hideError();
+            usernameInput.focus();
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('errorMessage').classList.remove('show');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            hideError();
+            
+            if (!selectedRole) {
+                showError('Please select a role first');
+                return;
+            }
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!username) {
+                showError('Please enter your credentials');
+                return;
+            }
+            
+            if (!password && selectedRole !== 'admin') {
+                showError('Please enter your password');
+                return;
+            }
+            
+            try {
+                if (selectedRole === 'student') {
+                    // Authenticate student
+                    const response = await fetch(`${API_URL}/auth/student/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            student_id: username,
+                            password: password
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        showError(data.error || 'Login failed');
+                        return;
+                    }
+                    
+                    // Redirect to student portal
+                    window.location.href = 'Frontend_Related/student_frontend_api.html?student_id=' + username;
+                    
+                } else if (selectedRole === 'driver') {
+                    // Authenticate driver
+                    const response = await fetch(`${API_URL}/auth/driver/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contact: username,
+                            password: password
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        showError(data.error || 'Login failed');
+                        return;
+                    }
+                    
+                    // Redirect to driver portal
+                    window.location.href = 'Frontend_Related/driver_frontend_api.html?driver_id=' + data.driver.driver_id;
+                    
+                } else if (selectedRole === 'admin') {
+                    // Authenticate admin
+                    const response = await fetch(`${API_URL}/auth/admin/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: username,
+                            password: password
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        showError(data.error || 'Login failed');
+                        return;
+                    }
+                    
+                    // Redirect to admin portal
+                    window.location.href = 'Frontend_Related/admin_frontend_api.html';
+                }
+            } catch (error) {
+                showError('Connection error. Please check if the server is running.');
+                console.error('Login error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

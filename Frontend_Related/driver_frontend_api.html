@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Dashboard - Bus Route Management</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 40px; }
+        h1 { color: #333; text-align: center; margin-bottom: 10px; font-size: 32px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 16px; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; color: #333; font-weight: 600; margin-bottom: 10px; font-size: 15px; }
+        select, input { width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 15px; }
+        select:focus, input:focus { outline: none; border-color: #667eea; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; margin-bottom: 15px; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; transform: translateY(-2px); }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .status-card { background: #f0f9ff; border-left: 4px solid #667eea; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: none; }
+        .status-card.active { display: block; }
+        .status-card h3 { color: #667eea; margin-bottom: 10px; }
+        .status-card p { color: #666; margin: 5px 0; font-size: 14px; }
+        .journey-controls { display: none; }
+        .journey-controls.active { display: block; }
+        .location-status { background: #10b981; color: white; padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; font-size: 14px; display: none; }
+        .location-status.active { display: block; }
+        .countdown-display { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 10px; text-align: center; margin-top: 20px; display: none; }
+        .countdown-display.active { display: block; }
+        .countdown-timer { font-size: 48px; font-weight: bold; color: #d97706; margin: 10px 0; }
+        .map-container { background: white; padding: 20px; border-radius: 10px; margin-top: 30px; display: none; }
+        .map-container.active { display: block; }
+        #driverMap { height: 400px; width: 100%; border-radius: 10px; margin-top: 15px; }
+        .demand-section { background: white; padding: 20px; border-radius: 10px; margin-top: 30px; }
+        .demand-item { background: #f0f9ff; border-left: 4px solid #667eea; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .error-message { background: #fee2e2; color: #dc2626; padding: 10px; border-radius: 8px; margin-bottom: 15px; display: none; }
+        .error-message.active { display: block; }
+        .loading { text-align: center; padding: 20px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚌 Driver Dashboard</h1>
+        <p class="subtitle">Connected to API</p>
+
+        <div class="error-message" id="errorMessage"></div>
+
+        <form id="driverForm">
+            <div class="form-group">
+                <label for="driverSelect">Select Your Name</label>
+                <select id="driverSelect" required>
+                    <option value="">-- Loading drivers --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="busSelect">Select Bus</label>
+                <select id="busSelect" required>
+                    <option value="">-- Loading buses --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="routeSelect">Select Route</label>
+                <select id="routeSelect" required>
+                    <option value="">-- Loading routes --</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Assign Details</button>
+        </form>
+
+        <div class="status-card" id="statusCard">
+            <h3>Journey Details</h3>
+            <p><strong>Driver:</strong> <span id="displayDriver"></span></p>
+            <p><strong>Bus:</strong> <span id="displayBus"></span></p>
+            <p><strong>Route:</strong> <span id="displayRoute"></span></p>
+        </div>
+
+        <div class="journey-controls" id="journeyControls">
+            <button class="btn btn-success" id="startJourneyBtn">Start Journey</button>
+            <button class="btn btn-danger" id="endJourneyBtn">End Journey</button>
+        </div>
+
+        <div class="location-status" id="locationStatus">
+            📍 Location sharing active
+        </div>
+
+        <div class="countdown-display" id="countdownDisplay">
+            <h3>⏰ Departure Countdown</h3>
+            <div class="countdown-timer" id="countdownTimer">45:00</div>
+            <p>Time until departure</p>
+            <button class="btn btn-primary" id="leftEarlyBtn" style="display: none; margin-top: 15px;">Bus Leaving Early</button>
+        </div>
+
+        <div class="map-container" id="driverMapContainer">
+            <h3 style="color: #333; margin-bottom: 15px;">📍 Your Live Location</h3>
+            <div id="driverMap"></div>
+        </div>
+
+        <div class="demand-section">
+            <h3 style="color: #333; margin-bottom: 15px;">📊 Student Demand by Route</h3>
+            <div id="demandContainer" class="loading">Loading student requests...</div>
+        </div>
+
+        <div class="demand-section" style="margin-top: 20px;">
+            <h3 style="color: #333; margin-bottom: 15px;">📢 Updates & Announcements</h3>
+            <div id="updatesContainer" class="loading">Loading updates...</div>
+        </div>
+
+        <button class="btn btn-danger" onclick="logout()" style="margin-top: 30px;">Logout</button>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let journeyData = {};
+        let watchId = null;
+        let driverMap = null;
+        let driverMarker = null;
+        let countdownInterval = null;
+        let assignmentId = null;
+
+        // Load drivers, buses, and routes
+        async function loadData() {
+            try {
+                // Load drivers
+                const driversRes = await fetch(`${API_URL}/drivers`);
+                const drivers = await driversRes.json();
+                const driverSelect = document.getElementById('driverSelect');
+                driverSelect.innerHTML = '<option value="">-- Select your name --</option>';
+                drivers.forEach(driver => {
+                    driverSelect.innerHTML += `<option value="${driver.driver_id}" data-name="${driver.name}">${driver.name}</option>`;
+                });
+
+                // Load buses
+                const busesRes = await fetch(`${API_URL}/buses`);
+                const buses = await busesRes.json();
+                const busSelect = document.getElementById('busSelect');
+                busSelect.innerHTML = '<option value="">-- Select a bus --</option>';
+                buses.forEach(bus => {
+                    busSelect.innerHTML += `<option value="${bus.bus_id}" data-number="${bus.number}">${bus.number} - ${bus.reg}</option>`;
+                });
+
+                // Load routes
+                const routesRes = await fetch(`${API_URL}/routes`);
+                const routes = await routesRes.json();
+                const routeSelect = document.getElementById('routeSelect');
+                routeSelect.innerHTML = '<option value="">-- Select a route --</option>';
+                routes.forEach(route => {
+                    routeSelect.innerHTML += `<option value="${route.route_id}" data-name="${route.route_name}" data-desc="${route.route_description}">${route.route_name}</option>`;
+                });
+
+                // Load student requests and updates
+                loadStudentDemand();
+                loadUpdates();
+            } catch (error) {
+                showError('Failed to load data: ' + error.message);
+            }
+        }
+
+        // Load student demand
+        async function loadStudentDemand() {
+            try {
+                const response = await fetch(`${API_URL}/students/requests`);
+                const requests = await response.json();
+                
+                const container = document.getElementById('demandContainer');
+                if(requests.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">No student requests yet</div>';
+                    return;
+                }
+
+                // Group by route
+                const demandByRoute = {};
+                requests.forEach(req => {
+                    if(!demandByRoute[req.route_name]) {
+                        demandByRoute[req.route_name] = { count: 0, students: [] };
+                    }
+                    demandByRoute[req.route_name].count++;
+                    demandByRoute[req.route_name].students.push(req.student_id);
+                });
+
+                container.innerHTML = '';
+                Object.keys(demandByRoute).forEach(routeName => {
+                    const demand = demandByRoute[routeName];
+                    container.innerHTML += `
+                        <div class="demand-item">
+                            <h4 style="color: #667eea; margin-bottom: 8px;">${routeName}</h4>
+                            <p style="color: #666; font-size: 14px;"><strong>${demand.count}</strong> student(s) waiting</p>
+                            <small style="color: #999; font-size: 12px;">Students: ${demand.students.join(', ')}</small>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error('Failed to load student demand:', error);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('driverForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const driverSelect = document.getElementById('driverSelect');
+            const busSelect = document.getElementById('busSelect');
+            const routeSelect = document.getElementById('routeSelect');
+            
+            if(!driverSelect.value) {
+                showError('Please select a driver');
+                return;
+            }
+            if(!busSelect.value) {
+                showError('Please select a bus');
+                return;
+            }
+            if(!routeSelect.value) {
+                showError('Please select a route');
+                return;
+            }
+            
+            const driverOption = driverSelect.options[driverSelect.selectedIndex];
+            const busOption = busSelect.options[busSelect.selectedIndex];
+            const routeOption = routeSelect.options[routeSelect.selectedIndex];
+            
+            journeyData = {
+                driver_id: driverSelect.value,
+                driver_name: driverOption.dataset.name,
+                bus_id: busSelect.value,
+                bus_number: busOption.dataset.number,
+                route: routeOption.dataset.name,
+                route_desc: routeOption.dataset.desc
+            };
+
+            try {
+                // Create assignment in database
+                const response = await fetch(`${API_URL}/assignments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        driver_id: journeyData.driver_id,
+                        bus_id: journeyData.bus_id,
+                        route_name: journeyData.route,
+                        route_description: journeyData.route
+                    })
+                });
+                const result = await response.json();
+                assignmentId = result.assignment_id;
+
+                document.getElementById('displayDriver').textContent = journeyData.driver_name;
+                document.getElementById('displayBus').textContent = journeyData.bus_number;
+                document.getElementById('displayRoute').textContent = journeyData.route;
+                
+                document.getElementById('statusCard').classList.add('active');
+                document.getElementById('journeyControls').classList.add('active');
+                document.getElementById('driverForm').style.display = 'none';
+            } catch (error) {
+                showError('Failed to create assignment: ' + error.message);
+            }
+        });
+
+        // Start Journey
+        document.getElementById('startJourneyBtn').addEventListener('click', function() {
+            // Check if location tracking is already active
+            if(watchId !== null) {
+                alert('Journey already started!');
+                return;
+            }
+            
+            if ("geolocation" in navigator) {
+                const departureTime = new Date(Date.now() + 45 * 60 * 1000);
+                
+                // Update assignment status
+                fetch(`${API_URL}/assignments/${assignmentId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'departing',
+                        departure_time: departureTime.toISOString()
+                    })
+                });
+
+                // Start countdown ONCE, outside the geolocation callback
+                startCountdown(departureTime);
+
+                watchId = navigator.geolocation.watchPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        
+                        // Save location to database
+                        fetch(`${API_URL}/assignments/location`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                bus_id: journeyData.bus_id,
+                                latitude: lat,
+                                longitude: lon
+                            })
+                        });
+
+                        document.getElementById('locationStatus').classList.add('active');
+                        document.getElementById('startJourneyBtn').disabled = true;
+                        
+                        if(!driverMap) {
+                            initializeDriverMap(lat, lon);
+                        } else {
+                            updateDriverMapLocation(lat, lon);
+                        }
+                    },
+                    function(error) {
+                        showError('Location access denied. Please enable location services.');
+                    },
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                );
+            } else {
+                showError('Geolocation is not supported by your device');
+            }
+        });
+
+        // End Journey
+        document.getElementById('endJourneyBtn').addEventListener('click', async function() {
+            if(confirm('Are you sure you want to end the journey?')) {
+                if(watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+
+                // End assignment in database
+                await fetch(`${API_URL}/assignments/${assignmentId}`, { method: 'DELETE' });
+
+                document.getElementById('driverForm').reset();
+                document.getElementById('driverForm').style.display = 'block';
+                document.getElementById('statusCard').classList.remove('active');
+                document.getElementById('journeyControls').classList.remove('active');
+                document.getElementById('driverMapContainer').classList.remove('active');
+                document.getElementById('countdownDisplay').classList.remove('active');
+                document.getElementById('locationStatus').classList.remove('active');
+                
+                journeyData = {};
+                assignmentId = null;
+            }
+        });
+
+        // Initialize driver map
+        function initializeDriverMap(lat, lon) {
+            document.getElementById('driverMapContainer').classList.add('active');
+            
+            if(!driverMap) {
+                driverMap = L.map('driverMap').setView([lat, lon], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(driverMap);
+                
+                const busIcon = L.divIcon({
+                    className: 'bus-marker',
+                    html: '<div style="font-size: 32px;">🚌</div>',
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                });
+                
+                driverMarker = L.marker([lat, lon], {icon: busIcon}).addTo(driverMap);
+                driverMarker.bindPopup(`<b>Your Location</b><br>Bus ${journeyData.bus_number}`).openPopup();
+            }
+        }
+
+        function updateDriverMapLocation(lat, lon) {
+            if(driverMarker) {
+                driverMarker.setLatLng([lat, lon]);
+                driverMap.setView([lat, lon], 15);
+            }
+        }
+
+        // Countdown
+        function startCountdown(departureTime) {
+            // Prevent starting countdown if already running
+            if(countdownInterval) {
+                console.log('Countdown already running');
+                return;
+            }
+            
+            document.getElementById('countdownDisplay').classList.add('active');
+            document.getElementById('leftEarlyBtn').style.display = 'block';
+            
+            countdownInterval = setInterval(async () => {
+                const now = new Date();
+                const timeLeft = departureTime - now;
+                
+                if(timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    
+                    document.getElementById('countdownTimer').textContent = '00:00';
+                    document.getElementById('countdownTimer').style.color = '#10b981';
+                    
+                    // Hide the "Bus Leaving Early" button when countdown ends
+                    document.getElementById('leftEarlyBtn').style.display = 'none';
+                    
+                    // Update status to departed when timer reaches zero
+                    if(assignmentId) {
+                        try {
+                            await fetch(`${API_URL}/assignments/${assignmentId}/status`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ status: 'departed', departure_time: new Date().toISOString() })
+                            });
+                            alert('⏰ Departure time reached! Bus marked as departed.');
+                        } catch (error) {
+                            console.error('Failed to update departure status:', error);
+                        }
+                    }
+                    
+                    return;
+                }
+                
+                const minutes = Math.floor(timeLeft / 60000);
+                const seconds = Math.floor((timeLeft % 60000) / 1000);
+                document.getElementById('countdownTimer').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Notifications
+                if(minutes === 10 && seconds === 0) alert('⏰ 10 minutes until departure!');
+                if(minutes === 5 && seconds === 0) alert('⚠️ 5 minutes until departure!');
+                if(minutes === 1 && seconds === 0) alert('🚨 1 minute until departure!');
+            }, 1000);
+        }
+
+        document.getElementById('leftEarlyBtn').addEventListener('click', async function() {
+            if(confirm('Are you sure the bus is leaving early?')) {
+                // Disable button immediately to prevent double-clicks
+                const btn = document.getElementById('leftEarlyBtn');
+                btn.disabled = true;
+                btn.textContent = 'Processing...';
+                
+                try {
+                    await fetch(`${API_URL}/assignments/${assignmentId}/status`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: 'departed', departure_time: new Date().toISOString() })
+                    });
+                    
+                    // Stop countdown
+                    if(countdownInterval) {
+                        clearInterval(countdownInterval);
+                        countdownInterval = null;
+                    }
+                    
+                    // Update countdown display
+                    document.getElementById('countdownTimer').textContent = '00:00';
+                    document.getElementById('countdownTimer').style.color = '#10b981';
+                    
+                    // Hide button permanently
+                    btn.style.display = 'none';
+                    
+                    // Show success message
+                    alert('Bus marked as departed early. Journey continues.');
+                } catch (error) {
+                    // Re-enable button if there was an error
+                    btn.disabled = false;
+                    btn.textContent = 'Bus Leaving Early';
+                    alert('Failed to update status. Please try again.');
+                }
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+            setTimeout(() => errorDiv.classList.remove('active'), 5000);
+        }
+
+        // Load updates
+        async function loadUpdates() {
+            try {
+                const response = await fetch(`${API_URL}/updates?target=drivers`);
+                const updates = await response.json();
+                
+                const container = document.getElementById('updatesContainer');
+                if(updates.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">No updates available</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                updates.forEach(update => {
+                    container.innerHTML += `
+                        <div class="demand-item">
+                            <h4 style="color: #667eea; margin-bottom: 8px;">${update.title}</h4>
+                            <p style="color: #666; font-size: 14px;">${update.message}</p>
+                            <small style="color: #999; font-size: 12px;">${new Date(update.created_at).toLocaleString()}</small>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error('Failed to load updates:', error);
+            }
+        }
+
+        // Initialize
+        loadData();
+        setInterval(loadStudentDemand, 5000);
+        setInterval(loadUpdates, 10000);
+        
+        // Logout function
+        function logout() {
+            if(confirm('Are you sure you want to logout?')) {
+                if(watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                }
+                if(countdownInterval) clearInterval(countdownInterval);
+                window.location.href = '../loginpage.html';
+            }
+        }
+        
+        // Auto-select driver from URL parameter
+        window.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const driverId = urlParams.get('driver_id');
+            
+            if (driverId) {
+                document.getElementById('driverSelect').value = driverId;
+            }
+        });
+    </script>
+</body>
+</html>

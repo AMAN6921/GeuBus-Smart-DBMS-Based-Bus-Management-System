@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Bus Route Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); padding: 40px; }
+        .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e0e0e0; position: relative; }
+        .header h1 { color: #333; font-size: 32px; margin-bottom: 5px; }
+        .header p { color: #666; font-size: 16px; }
+        .logout-header { position: absolute; top: 0; right: 0; background: #ef4444; padding: 12px 24px; border-radius: 10px; cursor: pointer; border: none; color: white; font-size: 14px; font-weight: 600; transition: all 0.3s; }
+        .logout-header:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+        .tabs { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
+        .tab-btn { padding: 12px 25px; background: white; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 15px; font-weight: 600; color: #666; transition: all 0.3s; }
+        .tab-btn:hover { border-color: #667eea; color: #667eea; transform: translateY(-2px); }
+        .tab-btn.active { background: #667eea; color: white; border-color: #667eea; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .section-title { font-size: 22px; color: #333; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #e0e0e0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: #f8f9fa; font-weight: 600; color: #333; }
+        tr:hover { background: #f8f9fa; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; color: #333; font-weight: 600; margin-bottom: 8px; font-size: 15px; }
+        input, select, textarea { width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 15px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #667eea; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #f0f9ff; border-left: 4px solid #667eea; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 15px; text-align: center; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); transition: transform 0.3s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-card h3 { font-size: 36px; margin-bottom: 5px; }
+        .stat-card p { opacity: 0.9; font-size: 14px; }
+        .loading { text-align: center; padding: 40px; color: #999; }
+        .error { background: #fee2e2; border-left: 4px solid #ef4444; color: #dc2626; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+        .success { background: #d1fae5; border-left: 4px solid #10b981; color: #065f46; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="logout-header" onclick="logout()">Logout</button>
+            <h1>🔐 Admin Dashboard</h1>
+            <p>Bus Route Management System</p>
+        </div>
+        
+        <div id="message"></div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+            <button class="tab-btn" onclick="showTab('monitor')">Live Monitor</button>
+            <button class="tab-btn" onclick="showTab('buses')">Manage Buses</button>
+            <button class="tab-btn" onclick="showTab('drivers')">Manage Drivers</button>
+            <button class="tab-btn" onclick="showTab('students')">Manage Students</button>
+            <button class="tab-btn" onclick="showTab('routes')">Manage Routes</button>
+            <button class="tab-btn" onclick="showTab('updates')">Send Updates</button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview" class="tab-content active">
+            <h2 class="section-title">System Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card"><h3 id="totalBuses">0</h3><p>Total Buses</p></div>
+                <div class="stat-card"><h3 id="totalDrivers">0</h3><p>Total Drivers</p></div>
+                <div class="stat-card"><h3 id="totalStudents">0</h3><p>Total Students</p></div>
+                <div class="stat-card"><h3 id="totalRoutes">0</h3><p>Total Routes</p></div>
+            </div>
+        </div>
+
+        <!-- Live Monitor Tab -->
+        <div id="monitor" class="tab-content">
+            <h2 class="section-title">🔴 Live Operations Monitor</h2>
+            
+            <div class="stats-grid" style="margin-bottom: 30px;">
+                <div class="stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <h3 id="activeAssignments">0</h3>
+                    <p>Active Assignments</p>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    <h3 id="pendingRequests">0</h3>
+                    <p>Pending Student Requests</p>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h3 id="boardedCount">0</h3>
+                    <p>Students Boarded</p>
+                </div>
+            </div>
+
+            <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+                <h3 style="color: #dc2626; margin-bottom: 10px;">⚠️ Clear All Live Data</h3>
+                <p style="color: #991b1b; margin-bottom: 15px; font-size: 14px;">
+                    This will clear all active assignments, student requests, boarded students, and bus locations. Use this for a fresh start.
+                </p>
+                <button class="btn btn-danger" onclick="clearAllLiveData()" style="padding: 12px 24px;">
+                    🗑️ Clear All Live Monitoring Data
+                </button>
+            </div>
+
+            <h3 style="margin-bottom: 15px;">🚌 Active Bus Assignments</h3>
+            <div id="activeAssignmentsLoading" class="loading">Loading active assignments...</div>
+            <table id="activeAssignmentsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Bus Number</th>
+                        <th>Driver Name</th>
+                        <th>Driver Contact</th>
+                        <th>Route</th>
+                        <th>Status</th>
+                        <th>Started At</th>
+                    </tr>
+                </thead>
+                <tbody id="activeAssignmentsBody"></tbody>
+            </table>
+
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">👥 Student Requests</h3>
+            <div id="studentRequestsLoading" class="loading">Loading student requests...</div>
+            <table id="studentRequestsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Route Requested</th>
+                        <th>Status</th>
+                        <th>Requested At</th>
+                    </tr>
+                </thead>
+                <tbody id="studentRequestsBody"></tbody>
+            </table>
+
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">✅ Students Boarded</h3>
+            <div id="boardedStudentsLoading" class="loading">Loading boarded students...</div>
+            <table id="boardedStudentsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Bus</th>
+                        <th>Route</th>
+                        <th>Boarded At</th>
+                    </tr>
+                </thead>
+                <tbody id="boardedStudentsBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Manage Buses Tab -->
+        <div id="buses" class="tab-content">
+            <h2 class="section-title">Manage Buses</h2>
+            <div class="card">
+                <h3 style="margin-bottom: 15px;">Add New Bus</h3>
+                <form id="addBusForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bus Number</label>
+                            <input type="number" id="newBusNumber" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Registration Number</label>
+                            <input type="text" id="newBusReg" placeholder="UK 07 PA 1234" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">Add Bus</button>
+                </form>
+            </div>
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">All Buses</h3>
+            <div id="busesLoading" class="loading">Loading buses...</div>
+            <table id="busesTable" style="display: none;">
+                <thead><tr><th>Bus Number</th><th>Registration Number</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="busesTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Manage Drivers Tab -->
+        <div id="drivers" class="tab-content">
+            <h2 class="section-title">Manage Drivers</h2>
+            <div class="card">
+                <h3 style="margin-bottom: 15px;">Add New Driver</h3>
+                <form id="addDriverForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Driver Name</label>
+                            <input type="text" id="newDriverName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contact Number</label>
+                            <input type="text" id="newDriverContact" placeholder="9876543210" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">Add Driver</button>
+                </form>
+            </div>
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">All Drivers</h3>
+            <div id="driversLoading" class="loading">Loading drivers...</div>
+            <table id="driversTable" style="display: none;">
+                <thead><tr><th>Driver Name</th><th>Contact Number</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="driversTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Manage Students Tab -->
+        <div id="students" class="tab-content">
+            <h2 class="section-title">Manage Students</h2>
+            <div class="card">
+                <h3 style="margin-bottom: 15px;">Add New Student</h3>
+                <form id="addStudentForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Student ID</label>
+                            <input type="text" id="newStudentId" placeholder="e.g., 2024001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Student Name</label>
+                            <input type="text" id="newStudentName" placeholder="Enter student name" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">Add Student</button>
+                </form>
+            </div>
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">All Students</h3>
+            <div id="studentsLoading" class="loading">Loading students...</div>
+            <table id="studentsTable" style="display: none;">
+                <thead><tr><th>Student ID</th><th>Student Name</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody id="studentsTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Manage Routes Tab -->
+        <div id="routes" class="tab-content">
+            <h2 class="section-title">Manage Routes</h2>
+            <div class="card">
+                <h3 style="margin-bottom: 15px;">Add New Route</h3>
+                <form id="addRouteForm">
+                    <div class="form-group">
+                        <label>Route Name</label>
+                        <input type="text" id="newRouteName" placeholder="e.g., Prince Chowk Route" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Route Description</label>
+                        <input type="text" id="newRouteDesc" placeholder="e.g., Saharanpur Chowk-Matawala Bagh-ISBT-Geu" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Starting Point</label>
+                            <input type="text" id="newRouteStart" placeholder="e.g., Prince Chowk">
+                        </div>
+                        <div class="form-group">
+                            <label>Ending Point</label>
+                            <input type="text" id="newRouteEnd" placeholder="e.g., GEU Campus">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">Add Route</button>
+                </form>
+            </div>
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">All Routes</h3>
+            <div id="routesLoading" class="loading">Loading routes...</div>
+            <table id="routesTable" style="display: none;">
+                <thead><tr><th>Route Name</th><th>Description</th><th>Start</th><th>End</th><th>Actions</th></tr></thead>
+                <tbody id="routesTableBody"></tbody>
+            </table>
+        </div>
+
+        <!-- Send Updates Tab -->
+        <div id="updates" class="tab-content">
+            <h2 class="section-title">Send Updates</h2>
+            <div class="card">
+                <h3 style="margin-bottom: 15px;">Create New Update</h3>
+                <form id="updateForm">
+                    <div class="form-group">
+                        <label>Update Title</label>
+                        <input type="text" id="updateTitle" placeholder="e.g., Service Delay Notice" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <textarea id="updateMessage" rows="4" placeholder="Enter your message here..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Send To</label>
+                        <select id="updateTarget">
+                            <option value="all">All Users (Drivers & Students)</option>
+                            <option value="drivers">Drivers Only</option>
+                            <option value="students">Students Only</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Update</button>
+                </form>
+            </div>
+
+            <h3 style="margin-top: 30px; margin-bottom: 15px;">Sent Updates</h3>
+            <div id="sentUpdatesLoading" class="loading">Loading sent updates...</div>
+            <div id="sentUpdatesContainer" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Edit Update Modal -->
+    <div class="modal" id="editUpdateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative;">
+            <button class="modal-close" onclick="closeEditModal()" style="position: absolute; top: 15px; right: 15px; background: #ef4444; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px;">×</button>
+            <h3 style="margin-bottom: 20px; color: #667eea;">Edit Update</h3>
+            <form id="editUpdateForm">
+                <input type="hidden" id="editUpdateId">
+                <div class="form-group">
+                    <label>Update Title</label>
+                    <input type="text" id="editUpdateTitle" required>
+                </div>
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="editUpdateMessage" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Send To</label>
+                    <select id="editUpdateTarget">
+                        <option value="all">All Users (Drivers & Students)</option>
+                        <option value="drivers">Drivers Only</option>
+                        <option value="students">Students Only</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Bus Modal -->
+    <div class="modal" id="editBusModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative;">
+            <button class="modal-close" onclick="closeEditBusModal()" style="position: absolute; top: 15px; right: 15px; background: #ef4444; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px;">×</button>
+            <h3 style="margin-bottom: 20px; color: #667eea;">Edit Bus</h3>
+            <form id="editBusForm">
+                <input type="hidden" id="editBusId">
+                <div class="form-group">
+                    <label>Bus Number</label>
+                    <input type="number" id="editBusNumber" required>
+                </div>
+                <div class="form-group">
+                    <label>Registration Number</label>
+                    <input type="text" id="editBusReg" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Driver Modal -->
+    <div class="modal" id="editDriverModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative;">
+            <button class="modal-close" onclick="closeEditDriverModal()" style="position: absolute; top: 15px; right: 15px; background: #ef4444; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px;">×</button>
+            <h3 style="margin-bottom: 20px; color: #667eea;">Edit Driver</h3>
+            <form id="editDriverForm">
+                <input type="hidden" id="editDriverId">
+                <div class="form-group">
+                    <label>Driver Name</label>
+                    <input type="text" id="editDriverName" required>
+                </div>
+                <div class="form-group">
+                    <label>Contact Number</label>
+                    <input type="text" id="editDriverContact" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div class="modal" id="editStudentModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative;">
+            <button class="modal-close" onclick="closeEditStudentModal()" style="position: absolute; top: 15px; right: 15px; background: #ef4444; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px;">×</button>
+            <h3 style="margin-bottom: 20px; color: #667eea;">Edit Student</h3>
+            <form id="editStudentForm">
+                <input type="hidden" id="editStudentOldId">
+                <div class="form-group">
+                    <label>Student ID</label>
+                    <input type="text" id="editStudentId" required>
+                </div>
+                <div class="form-group">
+                    <label>Student Name</label>
+                    <input type="text" id="editStudentName" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Route Modal -->
+    <div class="modal" id="editRouteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); position: relative;">
+            <button class="modal-close" onclick="closeEditRouteModal()" style="position: absolute; top: 15px; right: 15px; background: #ef4444; color: white; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px;">×</button>
+            <h3 style="margin-bottom: 20px; color: #667eea;">Edit Route</h3>
+            <form id="editRouteForm">
+                <input type="hidden" id="editRouteId">
+                <div class="form-group">
+                    <label>Route Name</label>
+                    <input type="text" id="editRouteName" required>
+                </div>
+                <div class="form-group">
+                    <label>Route Description</label>
+                    <input type="text" id="editRouteDesc" required>
+                </div>
+                <div class="form-group">
+                    <label>Starting Point</label>
+                    <input type="text" id="editRouteStart">
+                </div>
+                <div class="form-group">
+                    <label>Ending Point</label>
+                    <input type="text" id="editRouteEnd">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        // Show message
+        function showMessage(message, type = 'success') {
+            const msgDiv = document.getElementById('message');
+            msgDiv.className = type;
+            msgDiv.textContent = message;
+            msgDiv.style.display = 'block';
+            setTimeout(() => msgDiv.style.display = 'none', 3000);
+        }
+
+        // Show tab
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if(tabName === 'overview') updateStats();
+            if(tabName === 'monitor') loadMonitorData();
+            if(tabName === 'buses') loadBuses();
+            if(tabName === 'drivers') loadDrivers();
+            if(tabName === 'students') loadStudents();
+            if(tabName === 'routes') loadRoutes();
+            if(tabName === 'updates') loadSentUpdates();
+        }
+
+        // Update Stats
+        async function updateStats() {
+            try {
+                // Get all counts from API
+                const [busesRes, driversRes, studentsRes, routesRes] = await Promise.all([
+                    fetch(`${API_URL}/buses`),
+                    fetch(`${API_URL}/drivers`),
+                    fetch(`${API_URL}/students`),
+                    fetch(`${API_URL}/routes`)
+                ]);
+                
+                const buses = await busesRes.json();
+                const drivers = await driversRes.json();
+                const students = await studentsRes.json();
+                const routes = await routesRes.json();
+                
+                document.getElementById('totalBuses').textContent = buses.length;
+                document.getElementById('totalDrivers').textContent = drivers.length;
+                document.getElementById('totalStudents').textContent = students.length;
+                document.getElementById('totalRoutes').textContent = routes.length;
+            } catch (error) {
+                console.error('Failed to update stats:', error);
+            }
+        }
+
+        // Load Buses
+        async function loadBuses() {
+            try {
+                const response = await fetch(`${API_URL}/buses`);
+                const buses = await response.json();
+                
+                document.getElementById('busesLoading').style.display = 'none';
+                document.getElementById('busesTable').style.display = 'table';
+                
+                const tbody = document.getElementById('busesTableBody');
+                tbody.innerHTML = '';
+                buses.forEach(bus => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${bus.number}</strong></td>
+                            <td>${bus.reg}</td>
+                            <td>${bus.status}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="editBus(${bus.bus_id})" style="padding: 8px 16px; margin-right: 8px;">Edit</button>
+                                <button class="btn btn-danger" onclick="deleteBus(${bus.bus_id})" style="padding: 8px 16px;">Remove</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                updateStats();
+            } catch (error) {
+                showMessage('Failed to load buses: ' + error.message, 'error');
+            }
+        }
+
+        // Add Bus
+        document.getElementById('addBusForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await fetch(`${API_URL}/buses`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        number: document.getElementById('newBusNumber').value,
+                        registration_number: document.getElementById('newBusReg').value
+                    })
+                });
+                showMessage('Bus added successfully!');
+                e.target.reset();
+                loadBuses();
+            } catch (error) {
+                showMessage('Failed to add bus: ' + error.message, 'error');
+            }
+        });
+
+        // Delete Bus
+        async function deleteBus(id) {
+            if(confirm('Are you sure you want to remove this bus?')) {
+                try {
+                    await fetch(`${API_URL}/buses/${id}`, { method: 'DELETE' });
+                    showMessage('Bus removed successfully!');
+                    loadBuses();
+                } catch (error) {
+                    showMessage('Failed to remove bus: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Edit Bus
+        async function editBus(id) {
+            try {
+                const response = await fetch(`${API_URL}/buses`);
+                const buses = await response.json();
+                const bus = buses.find(b => b.bus_id === id);
+                
+                if(!bus) return;
+                
+                document.getElementById('editBusId').value = bus.bus_id;
+                document.getElementById('editBusNumber').value = bus.number;
+                document.getElementById('editBusReg').value = bus.reg;
+                
+                document.getElementById('editBusModal').style.display = 'flex';
+            } catch (error) {
+                showMessage('Failed to load bus: ' + error.message, 'error');
+            }
+        }
+
+        // Save Edited Bus
+        document.getElementById('editBusForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const busId = document.getElementById('editBusId').value;
+                await fetch(`${API_URL}/buses/${busId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        number: document.getElementById('editBusNumber').value,
+                        registration_number: document.getElementById('editBusReg').value
+                    })
+                });
+                showMessage('Bus updated successfully!');
+                closeEditBusModal();
+                loadBuses();
+            } catch (error) {
+                showMessage('Failed to update bus: ' + error.message, 'error');
+            }
+        });
+
+        function closeEditBusModal() {
+            document.getElementById('editBusModal').style.display = 'none';
+            document.getElementById('editBusForm').reset();
+        }
+
+        // Load Drivers
+        async function loadDrivers() {
+            try {
+                const response = await fetch(`${API_URL}/drivers`);
+                const drivers = await response.json();
+                
+                document.getElementById('driversLoading').style.display = 'none';
+                document.getElementById('driversTable').style.display = 'table';
+                
+                const tbody = document.getElementById('driversTableBody');
+                tbody.innerHTML = '';
+                drivers.forEach(driver => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${driver.name}</strong></td>
+                            <td>${driver.contact}</td>
+                            <td>${driver.status}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="editDriver(${driver.driver_id})" style="padding: 8px 16px; margin-right: 8px;">Edit</button>
+                                <button class="btn btn-danger" onclick="deleteDriver(${driver.driver_id})" style="padding: 8px 16px;">Remove</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                updateStats();
+            } catch (error) {
+                showMessage('Failed to load drivers: ' + error.message, 'error');
+            }
+        }
+
+        // Add Driver
+        document.getElementById('addDriverForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await fetch(`${API_URL}/drivers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('newDriverName').value,
+                        contact_number: document.getElementById('newDriverContact').value
+                    })
+                });
+                showMessage('Driver added successfully!');
+                e.target.reset();
+                loadDrivers();
+            } catch (error) {
+                showMessage('Failed to add driver: ' + error.message, 'error');
+            }
+        });
+
+        // Delete Driver
+        async function deleteDriver(id) {
+            if(confirm('Are you sure you want to remove this driver?')) {
+                try {
+                    await fetch(`${API_URL}/drivers/${id}`, { method: 'DELETE' });
+                    showMessage('Driver removed successfully!');
+                    loadDrivers();
+                } catch (error) {
+                    showMessage('Failed to remove driver: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Edit Driver
+        async function editDriver(id) {
+            try {
+                const response = await fetch(`${API_URL}/drivers`);
+                const drivers = await response.json();
+                const driver = drivers.find(d => d.driver_id === id);
+                
+                if(!driver) return;
+                
+                document.getElementById('editDriverId').value = driver.driver_id;
+                document.getElementById('editDriverName').value = driver.name;
+                document.getElementById('editDriverContact').value = driver.contact;
+                
+                document.getElementById('editDriverModal').style.display = 'flex';
+            } catch (error) {
+                showMessage('Failed to load driver: ' + error.message, 'error');
+            }
+        }
+
+        // Save Edited Driver
+        document.getElementById('editDriverForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const driverId = document.getElementById('editDriverId').value;
+                await fetch(`${API_URL}/drivers/${driverId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: document.getElementById('editDriverName').value,
+                        contact_number: document.getElementById('editDriverContact').value
+                    })
+                });
+                showMessage('Driver updated successfully!');
+                closeEditDriverModal();
+                loadDrivers();
+            } catch (error) {
+                showMessage('Failed to update driver: ' + error.message, 'error');
+            }
+        });
+
+        function closeEditDriverModal() {
+            document.getElementById('editDriverModal').style.display = 'none';
+            document.getElementById('editDriverForm').reset();
+        }
+
+        // Load Students
+        async function loadStudents() {
+            try {
+                const response = await fetch(`${API_URL}/students`);
+                const students = await response.json();
+                
+                document.getElementById('studentsLoading').style.display = 'none';
+                document.getElementById('studentsTable').style.display = 'table';
+                
+                const tbody = document.getElementById('studentsTableBody');
+                tbody.innerHTML = '';
+                students.forEach(student => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${student.id}</strong></td>
+                            <td>${student.name}</td>
+                            <td>${student.status}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="editStudent('${student.id}')" style="padding: 8px 16px; margin-right: 8px;">Edit</button>
+                                <button class="btn btn-danger" onclick="deleteStudent('${student.id}')" style="padding: 8px 16px;">Remove</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                updateStats();
+            } catch (error) {
+                showMessage('Failed to load students: ' + error.message, 'error');
+            }
+        }
+
+        // Add Student
+        document.getElementById('addStudentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await fetch(`${API_URL}/students`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_id: document.getElementById('newStudentId').value,
+                        name: document.getElementById('newStudentName').value
+                    })
+                });
+                showMessage('Student added successfully!');
+                e.target.reset();
+                loadStudents();
+            } catch (error) {
+                showMessage('Failed to add student: ' + error.message, 'error');
+            }
+        });
+
+        // Delete Student
+        async function deleteStudent(id) {
+            if(confirm('Are you sure you want to remove this student?')) {
+                try {
+                    await fetch(`${API_URL}/students/${id}`, { method: 'DELETE' });
+                    showMessage('Student removed successfully!');
+                    loadStudents();
+                } catch (error) {
+                    showMessage('Failed to remove student: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Edit Student
+        async function editStudent(id) {
+            try {
+                const response = await fetch(`${API_URL}/students`);
+                const students = await response.json();
+                const student = students.find(s => s.id === id);
+                
+                if(!student) return;
+                
+                document.getElementById('editStudentOldId').value = student.id;
+                document.getElementById('editStudentId').value = student.id;
+                document.getElementById('editStudentName').value = student.name;
+                
+                document.getElementById('editStudentModal').style.display = 'flex';
+            } catch (error) {
+                showMessage('Failed to load student: ' + error.message, 'error');
+            }
+        }
+
+        // Save Edited Student
+        document.getElementById('editStudentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const oldId = document.getElementById('editStudentOldId').value;
+                await fetch(`${API_URL}/students/${oldId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_id: document.getElementById('editStudentId').value,
+                        name: document.getElementById('editStudentName').value
+                    })
+                });
+                showMessage('Student updated successfully!');
+                closeEditStudentModal();
+                loadStudents();
+            } catch (error) {
+                showMessage('Failed to update student: ' + error.message, 'error');
+            }
+        });
+
+        function closeEditStudentModal() {
+            document.getElementById('editStudentModal').style.display = 'none';
+            document.getElementById('editStudentForm').reset();
+        }
+
+        // Load Sent Updates
+        async function loadSentUpdates() {
+            try {
+                const response = await fetch(`${API_URL}/updates`);
+                const updates = await response.json();
+                
+                document.getElementById('sentUpdatesLoading').style.display = 'none';
+                document.getElementById('sentUpdatesContainer').style.display = 'block';
+                
+                const container = document.getElementById('sentUpdatesContainer');
+                container.innerHTML = '';
+                
+                if(updates.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No updates sent yet</p>';
+                    return;
+                }
+                
+                updates.forEach(update => {
+                    const targetBadge = update.target === 'all' ? 'All Users' : update.target === 'drivers' ? 'Drivers' : 'Students';
+                    const targetColor = update.target === 'all' ? '#667eea' : update.target === 'drivers' ? '#10b981' : '#f59e0b';
+                    
+                    const div = document.createElement('div');
+                    div.style.cssText = 'background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 15px; position: relative;';
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                            <h4 style="color: #333; font-size: 18px; margin: 0;">${update.title}</h4>
+                            <span style="background: ${targetColor}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">${targetBadge}</span>
+                        </div>
+                        <p style="color: #666; margin-bottom: 10px;">${update.message}</p>
+                        <small style="color: #999; font-size: 12px;">Sent: ${new Date(update.created_at).toLocaleString()}</small>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button class="btn btn-primary" onclick="editUpdate(${update.update_id})" style="padding: 6px 12px; font-size: 12px;">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteUpdate(${update.update_id})" style="padding: 6px 12px; font-size: 12px;">Delete</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (error) {
+                showMessage('Failed to load updates: ' + error.message, 'error');
+            }
+        }
+
+        // Send Update
+        document.getElementById('updateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await fetch(`${API_URL}/updates`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: document.getElementById('updateTitle').value,
+                        message: document.getElementById('updateMessage').value,
+                        target: document.getElementById('updateTarget').value
+                    })
+                });
+                showMessage('Update sent successfully!');
+                e.target.reset();
+                loadSentUpdates();
+            } catch (error) {
+                showMessage('Failed to send update: ' + error.message, 'error');
+            }
+        });
+
+        // Edit Update
+        async function editUpdate(updateId) {
+            try {
+                const response = await fetch(`${API_URL}/updates`);
+                const updates = await response.json();
+                const update = updates.find(u => u.update_id === updateId);
+                
+                if(!update) return;
+                
+                document.getElementById('editUpdateId').value = update.update_id;
+                document.getElementById('editUpdateTitle').value = update.title;
+                document.getElementById('editUpdateMessage').value = update.message;
+                document.getElementById('editUpdateTarget').value = update.target;
+                
+                document.getElementById('editUpdateModal').style.display = 'flex';
+            } catch (error) {
+                showMessage('Failed to load update: ' + error.message, 'error');
+            }
+        }
+
+        // Save Edited Update
+        document.getElementById('editUpdateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const updateId = document.getElementById('editUpdateId').value;
+                await fetch(`${API_URL}/updates/${updateId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: document.getElementById('editUpdateTitle').value,
+                        message: document.getElementById('editUpdateMessage').value,
+                        target: document.getElementById('editUpdateTarget').value
+                    })
+                });
+                showMessage('Update edited successfully!');
+                closeEditModal();
+                loadSentUpdates();
+            } catch (error) {
+                showMessage('Failed to edit update: ' + error.message, 'error');
+            }
+        });
+
+        // Delete Update
+        async function deleteUpdate(updateId) {
+            if(confirm('Are you sure you want to delete this update?')) {
+                try {
+                    await fetch(`${API_URL}/updates/${updateId}`, { method: 'DELETE' });
+                    showMessage('Update deleted successfully!');
+                    loadSentUpdates();
+                } catch (error) {
+                    showMessage('Failed to delete update: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editUpdateModal').style.display = 'none';
+            document.getElementById('editUpdateForm').reset();
+        }
+
+        function logout() {
+            if(confirm('Are you sure you want to logout?')) {
+                window.location.href = '../loginpage.html';
+            }
+        }
+
+        // Load Routes
+        async function loadRoutes() {
+            try {
+                const response = await fetch(`${API_URL}/routes`);
+                const routes = await response.json();
+                
+                document.getElementById('routesLoading').style.display = 'none';
+                document.getElementById('routesTable').style.display = 'table';
+                
+                const tbody = document.getElementById('routesTableBody');
+                tbody.innerHTML = '';
+                routes.forEach(route => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${route.route_name}</strong></td>
+                            <td>${route.route_description || ''}</td>
+                            <td>${route.starting_point || '-'}</td>
+                            <td>${route.ending_point || '-'}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="editRoute(${route.route_id})" style="padding: 8px 16px; margin-right: 8px;">Edit</button>
+                                <button class="btn btn-danger" onclick="deleteRoute(${route.route_id})" style="padding: 8px 16px;">Remove</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                updateStats();
+            } catch (error) {
+                showMessage('Failed to load routes: ' + error.message, 'error');
+            }
+        }
+
+        // Add Route
+        document.getElementById('addRouteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await fetch(`${API_URL}/routes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        route_name: document.getElementById('newRouteName').value,
+                        route_description: document.getElementById('newRouteDesc').value,
+                        starting_point: document.getElementById('newRouteStart').value,
+                        ending_point: document.getElementById('newRouteEnd').value
+                    })
+                });
+                showMessage('Route added successfully!');
+                e.target.reset();
+                loadRoutes();
+            } catch (error) {
+                showMessage('Failed to add route: ' + error.message, 'error');
+            }
+        });
+
+        // Delete Route
+        async function deleteRoute(id) {
+            if(confirm('Are you sure you want to remove this route?')) {
+                try {
+                    await fetch(`${API_URL}/routes/${id}`, { method: 'DELETE' });
+                    showMessage('Route removed successfully!');
+                    loadRoutes();
+                } catch (error) {
+                    showMessage('Failed to remove route: ' + error.message, 'error');
+                }
+            }
+        }
+
+        // Edit Route
+        async function editRoute(id) {
+            try {
+                const response = await fetch(`${API_URL}/routes`);
+                const routes = await response.json();
+                const route = routes.find(r => r.route_id === id);
+                
+                if(!route) return;
+                
+                document.getElementById('editRouteId').value = route.route_id;
+                document.getElementById('editRouteName').value = route.route_name;
+                document.getElementById('editRouteDesc').value = route.route_description || '';
+                document.getElementById('editRouteStart').value = route.starting_point || '';
+                document.getElementById('editRouteEnd').value = route.ending_point || '';
+                
+                document.getElementById('editRouteModal').style.display = 'flex';
+            } catch (error) {
+                showMessage('Failed to load route: ' + error.message, 'error');
+            }
+        }
+
+        // Save Edited Route
+        document.getElementById('editRouteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const routeId = document.getElementById('editRouteId').value;
+                await fetch(`${API_URL}/routes/${routeId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        route_name: document.getElementById('editRouteName').value,
+                        route_description: document.getElementById('editRouteDesc').value,
+                        starting_point: document.getElementById('editRouteStart').value,
+                        ending_point: document.getElementById('editRouteEnd').value
+                    })
+                });
+                showMessage('Route updated successfully!');
+                closeEditRouteModal();
+                loadRoutes();
+            } catch (error) {
+                showMessage('Failed to update route: ' + error.message, 'error');
+            }
+        });
+
+        function closeEditRouteModal() {
+            document.getElementById('editRouteModal').style.display = 'none';
+            document.getElementById('editRouteForm').reset();
+        }
+
+        // Load Monitor Data
+        async function loadMonitorData() {
+            await loadActiveAssignments();
+            await loadStudentRequests();
+            await loadBoardedStudents();
+        }
+
+        // Clear All Live Data
+        async function clearAllLiveData() {
+            const confirmation = confirm(
+                '⚠️ WARNING: This will permanently delete:\n\n' +
+                '• All active bus assignments\n' +
+                '• All student requests\n' +
+                '• All boarded student records\n' +
+                '• All bus location data\n\n' +
+                'This action cannot be undone. Continue?'
+            );
+            
+            if(!confirmation) return;
+            
+            const doubleCheck = confirm('Are you absolutely sure? This will clear ALL live monitoring data!');
+            if(!doubleCheck) return;
+            
+            try {
+                const response = await fetch(`${API_URL}/admin/clear-live-data`, {
+                    method: 'DELETE'
+                });
+                
+                if(!response.ok) {
+                    throw new Error('Failed to clear data');
+                }
+                
+                showMessage('✅ All live monitoring data cleared successfully!', 'success');
+                
+                // Reload monitor data to show empty state
+                await loadMonitorData();
+                
+            } catch (error) {
+                showMessage('❌ Failed to clear data: ' + error.message, 'error');
+            }
+        }
+
+        // Load Boarded Students
+        async function loadBoardedStudents() {
+            try {
+                const response = await fetch(`${API_URL}/assignments/boarded`);
+                const boarded = await response.json();
+                
+                document.getElementById('boardedStudentsLoading').style.display = 'none';
+                document.getElementById('boardedStudentsTable').style.display = 'table';
+                document.getElementById('boardedCount').textContent = boarded.length;
+                
+                const tbody = document.getElementById('boardedStudentsBody');
+                tbody.innerHTML = '';
+                
+                if(boarded.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No students boarded yet</td></tr>';
+                    return;
+                }
+                
+                boarded.forEach(record => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${record.student_id}</strong></td>
+                            <td>Bus ${record.bus_number}</td>
+                            <td>${record.route_name}</td>
+                            <td>${new Date(record.boarded_at).toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error('Failed to load boarded students:', error);
+            }
+        }
+
+        // Load Active Assignments
+        async function loadActiveAssignments() {
+            try {
+                const response = await fetch(`${API_URL}/assignments`);
+                const assignments = await response.json();
+                
+                document.getElementById('activeAssignmentsLoading').style.display = 'none';
+                document.getElementById('activeAssignmentsTable').style.display = 'table';
+                document.getElementById('activeAssignments').textContent = assignments.length;
+                
+                const tbody = document.getElementById('activeAssignmentsBody');
+                tbody.innerHTML = '';
+                
+                if(assignments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No active assignments</td></tr>';
+                    return;
+                }
+                
+                assignments.forEach(assignment => {
+                    let statusColor = '#667eea'; // assigned
+                    if(assignment.status === 'departing') statusColor = '#10b981'; // green
+                    if(assignment.status === 'departed') statusColor = '#f59e0b'; // orange
+                    
+                    const statusText = assignment.status.charAt(0).toUpperCase() + assignment.status.slice(1);
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${assignment.bus_number}</strong></td>
+                            <td>${assignment.driver_name}</td>
+                            <td>${assignment.driver_contact}</td>
+                            <td>${assignment.route_name}</td>
+                            <td><span style="color: ${statusColor}; font-weight: 600;">${statusText}</span></td>
+                            <td>${new Date(assignment.created_at).toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error('Failed to load active assignments:', error);
+            }
+        }
+
+        // Load Student Requests
+        async function loadStudentRequests() {
+            try {
+                const response = await fetch(`${API_URL}/students/requests`);
+                const requests = await response.json();
+                
+                document.getElementById('studentRequestsLoading').style.display = 'none';
+                document.getElementById('studentRequestsTable').style.display = 'table';
+                document.getElementById('pendingRequests').textContent = requests.length;
+                
+                const tbody = document.getElementById('studentRequestsBody');
+                tbody.innerHTML = '';
+                
+                if(requests.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No pending requests</td></tr>';
+                    return;
+                }
+                
+                requests.forEach(request => {
+                    const statusColor = request.status === 'waiting' ? '#f59e0b' : '#10b981';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${request.student_id}</strong></td>
+                            <td>${request.route_name}</td>
+                            <td><span style="color: ${statusColor}; font-weight: 600;">${request.status}</span></td>
+                            <td>${new Date(request.created_at).toLocaleString()}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error('Failed to load student requests:', error);
+            }
+        }
+
+        // Initialize
+        updateStats();
+        loadBuses();
+        
+        // Auto-refresh stats and monitor every 5 seconds
+        setInterval(() => {
+            updateStats();
+            // Only refresh monitor if that tab is active
+            if(document.getElementById('monitor').classList.contains('active')) {
+                loadMonitorData();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
