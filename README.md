@@ -74,4 +74,4 @@ MIT License
 
 ---
 
-Made with ❤️ for Graphic Era University
+Made with ❤️ for Graphic Era University.
